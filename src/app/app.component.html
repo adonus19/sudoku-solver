@@ -1,0 +1,65 @@
+<div class="table">
+  <form [formGroup]="puzzle">
+    <table>
+      <tbody>
+
+        <tr formGroupName="1">
+          <td *ngFor="let square of puzzle.get('1')['controls']; let i = index;">
+            <input [formControl]=square type="text" maxlength="1">
+          </td>
+        </tr>
+
+        <tr formGroupName="2">
+          <td *ngFor="let square of puzzle.get('2')['controls']; let i = index;">
+            <input [formControl]=square type="text" maxlength="1">
+          </td>
+        </tr>
+
+        <tr formGroupName="3">
+          <td *ngFor="let square of puzzle.get('3')['controls']; let i = index;">
+            <input [formControl]=square type="text" maxlength="1">
+          </td>
+        </tr>
+
+        <tr formGroupName="4">
+          <td *ngFor="let square of puzzle.get('4')['controls']; let i = index;">
+            <input [formControl]=square type="text" maxlength="1">
+          </td>
+        </tr>
+
+        <tr formGroupName="5">
+          <td *ngFor="let square of puzzle.get('5')['controls']; let i = index;">
+            <input [formControl]=square type="text" maxlength="1">
+          </td>
+        </tr>
+
+        <tr formGroupName="6">
+          <td *ngFor="let square of puzzle.get('6')['controls']; let i = index;">
+            <input [formControl]=square type="text" maxlength="1">
+          </td>
+        </tr>
+
+        <tr formGroupName="7">
+          <td *ngFor="let square of puzzle.get('7')['controls']; let i = index;">
+            <input [formControl]=square type="text" maxlength="1">
+          </td>
+        </tr>
+
+        <tr formGroupName="8">
+          <td *ngFor="let square of puzzle.get('8')['controls']; let i = index;">
+            <input [formControl]=square type="text" maxlength="1">
+          </td>
+        </tr>
+
+        <tr formGroupName="9">
+          <td *ngFor="let square of puzzle.get('9')['controls']; let i = index;">
+            <input [formControl]=square type="text" maxlength="1">
+          </td>
+        </tr>
+
+      </tbody>
+    </table>
+  </form>
+
+  <button class="button-29" role="button" (click)="solve()">Solve!</button>
+</div>
