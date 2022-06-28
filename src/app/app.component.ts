@@ -21,18 +21,18 @@ interface Board {
 export class AppComponent {
   title = 'sudoku-solver';
   puzzle: FormGroup;
-  private SQUARE_COORDINATES = {
-    1: [1, 1, 1, 2, 2, 2, 3, 3, 3],
-    2: [1, 1, 1, 2, 2, 2, 3, 3, 3],
-    3: [1, 1, 1, 2, 2, 2, 3, 3, 3],
-    4: [4, 4, 4, 5, 5, 5, 6, 6, 6],
-    5: [4, 4, 4, 5, 5, 5, 6, 6, 6],
-    6: [4, 4, 4, 5, 5, 5, 6, 6, 6],
-    7: [7, 7, 7, 8, 8, 8, 9, 9, 9],
-    8: [7, 7, 7, 8, 8, 8, 9, 9, 9],
-    9: [7, 7, 7, 8, 8, 8, 9, 9, 9],
-  };
-  private workingBoard: Board;
+  private SQUARE_COORDINATES = [
+    [1, 1, 1, 2, 2, 2, 3, 3, 3],
+    [1, 1, 1, 2, 2, 2, 3, 3, 3],
+    [1, 1, 1, 2, 2, 2, 3, 3, 3],
+    [4, 4, 4, 5, 5, 5, 6, 6, 6],
+    [4, 4, 4, 5, 5, 5, 6, 6, 6],
+    [4, 4, 4, 5, 5, 5, 6, 6, 6],
+    [7, 7, 7, 8, 8, 8, 9, 9, 9],
+    [7, 7, 7, 8, 8, 8, 9, 9, 9],
+    [7, 7, 7, 8, 8, 8, 9, 9, 9],
+  ];
+  private workingBoard: string[][];
 
   constructor(private fb: FormBuilder) {
     this.puzzle = this.fb.group({
@@ -57,7 +57,7 @@ export class AppComponent {
   }
 
   solve() {
-    this.workingBoard = JSON.parse(JSON.stringify(this.puzzle.value));
+    this.workingBoard = this.buildBoard(this.puzzle.value);
 
     let updated = true,
       solved = false;
@@ -73,7 +73,7 @@ export class AppComponent {
         removes the number of blank cells ahead of the brute force.
     */
     while (updated && !solved) {
-      updated = this.onValueCellConstraint(this.workingBoard);
+      updated = this.oneValueCellConstraint(this.workingBoard);
       solved = this.isSolved(this.puzzle.value);
     }
 
@@ -81,34 +81,44 @@ export class AppComponent {
     if (!solved) {
       const board = this.backtrackBased(this.workingBoard);
       if (board) {
-        solved = this.isSolved(board as Board);
+        solved = this.isSolved(board);
       }
       if (solved) {
-        this.puzzle.setValue(board as Board);
+        for (let r = 1; r <= 9; r++) {
+          this.puzzle.get(`${r}`).setValue(board[r]);
+        }
       }
     }
   }
 
-  getRow(board: Board, row: string) {
+  buildBoard(board: Board) {
+    const newBoard: string[][] = [];
+    for (const prop in board) {
+      newBoard.push(board[prop]);
+    }
+    return newBoard;
+  }
+
+  getRow(board, row: number) {
     return board[row];
   }
 
-  getColumn(board: Board, column: number): string[] {
+  getColumn(board, column: number): string[] {
     // iterate the rows to return a column. Columns are zero based
-    const col: string[] = [];
-    for (const prop in board) {
-      col.push(board[prop][column]);
+    const col = [];
+    for (let row = 0; row < 9; row++) {
+      col.push(board[row][column]);
     }
     return col;
   }
 
-  getSquare(board: Board, square: number): string[] {
+  getSquare(board, square: number): string[] {
     // given a square (see SQUARE_COORDINATES above) returns a square
-    const cells: string[] = [];
-    for (const prop in board) {
+    let cells = [];
+    for (let r = 0; r < 9; r++) {
       for (let c = 0; c < 9; c++) {
-        if (square == this.SQUARE_COORDINATES[prop][c]) {
-          cells.push(board[prop][c]);
+        if (square == this.SQUARE_COORDINATES[r][c]) {
+          cells.push(board[r][c]);
         }
       }
     }
@@ -118,36 +128,30 @@ export class AppComponent {
   // looks for all possible values for the cell
   // if there is a single value, it sets the cell to that value
   // if there are multiple values it sets the cell to an array containing all its possible values (e.g. [1, 4, 5])
-  completeCell(board: Board, r: string, c: number): boolean {
-    console.log('R: ', r, 'C: ', c);
+  completeCell(board, r: number, c: number): boolean {
     const row = this.getRow(board, r);
-    const usedNumbers = [
-      ...row,
+    let used = [
+      ...this.getRow(board, r),
       ...this.getColumn(board, c),
       ...this.getSquare(board, this.SQUARE_COORDINATES[r][c]),
     ];
-    console.log(usedNumbers);
-    const possibilities: string[] = [];
+    let possibilities = [];
     for (let p = 1; p <= 9; p++) {
-      if (!usedNumbers.includes(`${p}`)) {
-        possibilities.push(`${p}`);
+      if (!used.includes(p)) {
+        possibilities.push(p);
       }
     }
-    console.log('possibilities: ', possibilities);
     if (possibilities.length == 1) {
+      // If there is only one valid possibility, fill it in
       row[c] = possibilities[0];
-      this.puzzle.get(r).setValue(row);
+      this.puzzle.get(`${r}`).setValue(row);
       this.workingBoard = JSON.parse(JSON.stringify(this.puzzle.value));
-      console.log(this.puzzle.value);
-      console.log(this.workingBoard);
+      board[r][c] = possibilities[0];
+      console.log('board: ', board);
       return true;
     } else {
-      console.log('board[r][c]: ', board[r][c]);
       board[r][c] = possibilities;
-      console.log('board[r][c]: ', board[r][c]);
-      console.log(this.puzzle.value);
-      console.log('board[r]', board[r]);
-      console.log(board);
+      console.log('board: ', board);
       return false;
     }
   }
@@ -159,15 +163,18 @@ export class AppComponent {
     rowName: string
   ): boolean {
     let updated = false;
-    const len = possibilities.length;
-    for (let i = 0; i < len; i++) {
-      const possibility = possibilities[i];
+    for (let i = 0; i < possibilities.length; i++) {
+      let possibility = possibilities[i];
       let counter = 0;
       row.forEach((cell) => {
         if (Array.isArray(cell)) {
-          if (cell.includes(possibility)) counter++;
+          if (cell.includes(possibility)) {
+            counter++;
+          }
         } else {
-          if (cell == possibility) counter++;
+          if (cell == possibility) {
+            counter++;
+          }
         }
       });
       if (counter == 1) {
@@ -179,6 +186,28 @@ export class AppComponent {
       }
     }
     return updated;
+
+    // let updated = false;
+    // const len = possibilities.length;
+    // for (let i = 0; i < len; i++) {
+    //   const possibility = possibilities[i];
+    //   let counter = 0;
+    //   row.forEach((cell) => {
+    //     if (Array.isArray(cell)) {
+    //       if (cell.includes(possibility)) counter++;
+    //     } else {
+    //       if (cell == possibility) counter++;
+    //     }
+    //   });
+    //   if (counter == 1) {
+    //     row[c] = possibility;
+    //     this.puzzle.get(rowName).setValue(row);
+    //     this.workingBoard = JSON.parse(JSON.stringify(this.puzzle.value));
+    //     updated = true;
+    //     break;
+    //   }
+    // }
+    // return updated;
   }
 
   compare(expected: string[], actual: string[]): boolean {
@@ -190,13 +219,13 @@ export class AppComponent {
     );
   }
 
-  isSolved(board: Board) {
+  isSolved(board) {
     const expected = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
     let valid = true;
 
     // Check all rows
     for (let r = 1; r < 10 && valid; r++) {
-      if (!this.compare(expected, this.getRow(board, `${r}`))) valid = false;
+      if (!this.compare(expected, this.getRow(board, r))) valid = false;
     }
 
     // Check all columns
@@ -212,42 +241,77 @@ export class AppComponent {
   }
 
   // brut force method. Takes in the workingBoard
-  backtrackBased(board: Board): Board | boolean {
-    let completedBoard: Board | boolean;
-    for (const r in this.puzzle.value) {
+  backtrackBased(orig_board): string[][] | boolean {
+    // Create a temporary board for our recursion.
+    let board = JSON.parse(JSON.stringify(orig_board));
+
+    for (let r = 0; r < 9; r++) {
       for (let c = 0; c < 9; c++) {
         // Process each incomplete cell
         if (board[r][c] == 0) {
           this.completeCell(board, r, c);
           if (this.isSolved(board)) return board;
-          const cell = board[r][c];
+          let cell = board[r][c];
           // If we just created a list of possibilities, iterate them and recurse
           if (Array.isArray(cell)) {
             for (let i = 0; i < cell.length; i++) {
-              const tempBoard = JSON.parse(JSON.stringify(board));
-              // choose a value
-              tempBoard[r][c] = cell[i];
-              // recurse again using new board
-              if ((completedBoard = this.backtrackBased(tempBoard))) {
-                return completedBoard;
+              // Create a temporary board for each recursion.
+              let board_2 = JSON.parse(JSON.stringify(board));
+              // Choose a value
+              board_2[r][c] = cell[i];
+              // Recurse again using new board
+              let completed_board;
+              if ((completed_board = this.backtrackBased(board_2))) {
+                return completed_board;
               }
             }
-            return false;
+            return false; // dead end
           }
         }
       }
     }
+
     return false;
+
+    // let tempBoard = JSON.parse(JSON.stringify(board));
+    // let completedBoard: string[][] | boolean;
+
+    // for (let r = 0; r < 9; r++) {
+    //   for (let c = 0; c < 9; c++) {
+    //     // Process each incomplete cell
+    //     if (board[r][c] == '0') {
+    //       this.completeCell(board, r, c);
+    //       if (this.isSolved(board)) return tempBoard;
+    //       let cell = board[r][c];
+    //       // If we just created a list of possibilities, iterate them and recurse
+    //       if (Array.isArray(cell)) {
+    //         for (let i = 0; i < cell.length; i++) {
+    //           // Create a temporary board for each recursion.
+    //           let board_2 = JSON.parse(JSON.stringify(board));
+    //           // Choose a value
+    //           board_2[r][c] = cell[i];
+    //           // Recurse again using new board
+    //           if ((completedBoard = this.backtrackBased(board_2))) {
+    //             return completedBoard;
+    //           }
+    //         }
+    //         return false; // dead end
+    //       }
+    //     }
+    //   }
+    // }
+
+    // return false;
   }
 
   // Constraint based pass.
   // Apply the rules of Sudoku and mark up the cells we are
   // 100% can only be a single value.
   // takes in the workingBoard
-  onValueCellConstraint(board: Board) {
+  oneValueCellConstraint(board: string[][]) {
     // Set to false at the start of the loop
     let updated = false;
-    for (const r in board) {
+    for (let r = 0; r < 9; r++) {
       for (let c = 0; c < 9; c++) {
         if (board[r][c] == '0') {
           updated = this.completeCell(board, r, c) || updated;
@@ -258,30 +322,31 @@ export class AppComponent {
     // Look out for any possibility that appears as a possibility
     // once-only in the row, column, or quadrant.
     // If it does, fill it in!
-    for (const r in board) {
+    for (let r = 0; r < 9; r++) {
       for (let c = 0; c < 9; c++) {
         if (Array.isArray(board[r][c])) {
-          let possibilities = board[r][c];
+          let possibilities = Array(board[r][c]);
           updated =
-            this.appearsOnlyOnce(possibilities, board[r], c, r) ||
+            this.appearsOnlyOnce(possibilities, board[r], c, `${r}`) ||
             this.appearsOnlyOnce(
               possibilities,
               this.getColumn(board, c),
               c,
-              r
+              `${r}`
             ) ||
             this.appearsOnlyOnce(
               possibilities,
               this.getSquare(board, this.SQUARE_COORDINATES[r][c]),
               c,
-              r
+              `${r}`
             ) ||
             updated;
         }
       }
     }
+
     // Reinitialize gaps back to zero before ending
-    for (const r in board) {
+    for (let r = 0; r < 9; r++) {
       for (let c = 0; c < 9; c++) {
         if (Array.isArray(board[r][c])) {
           board[r][c] = '0';
